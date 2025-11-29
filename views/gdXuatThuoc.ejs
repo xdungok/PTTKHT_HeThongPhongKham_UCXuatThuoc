@@ -1,0 +1,90 @@
+<%- include('./partials/header') %>
+
+<section class="xuat">
+  <div class="search">
+    <h3>Tìm kiếm bệnh nhân</h3>
+    <input id="cccd" placeholder="Nhập CCCD/CMND bệnh nhân" />
+    <button id="btnSearch">Tìm kiếm</button>
+  </div>
+
+  <div class="patient-info hidden" id="patientInfo">
+    <h4>Thông tin bệnh nhân</h4>
+    <div id="patientSummary"></div>
+    <button id="viewHoSo">Xem hồ sơ bệnh án</button>
+  </div>
+
+  <div class="hoso-info hidden" id="hosoInfo">
+    <h4>Chi tiết Hồ sơ bệnh án</h4>
+    <div id="hosoSummary"></div>
+    <button id="viewDonThuoc">Xem đơn thuốc</button>
+  </div>
+
+  <div class="donthuoc-info hidden" id="donThuocInfo">
+    <h4>Chi tiết Đơn thuốc</h4>
+    <table id="donthuocTable">
+      <thead><tr><th>Tên thuốc</th><th>Số lượng</th><th>Giá</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="total" id="donTotal"></div>
+    <button id="btnCreateInvoice">Tạo hóa đơn</button>
+  </div>
+
+</section>
+
+<script>
+// Hành vi cơ bản của client để gọi các API /xuat
+document.getElementById('btnSearch').addEventListener('click', async () => {
+  const cccd = document.getElementById('cccd').value.trim();
+  if (!cccd) return alert('Nhập CCCD');
+  const resp = await fetch('/xuat/api/patient/' + encodeURIComponent(cccd));
+  if (!resp.ok) return alert('Bệnh nhân không tìm thấy');
+  const data = await resp.json();
+  document.getElementById('patientInfo').classList.remove('hidden');
+  document.getElementById('patientSummary').innerText = `${data.hoTen} — ${data.ngheNghiep} — Mã hồ sơ: ${data.maHoSo}`;
+  window.__patient = data;
+});
+
+document.getElementById('viewHoSo').addEventListener('click', async () => {
+  const p = window.__patient;
+  if (!p) return alert('Không có bệnh nhân');
+  const resp = await fetch('/xuat/api/hoso/' + encodeURIComponent(p.maHoSo));
+  if (!resp.ok) return alert('Hồ sơ không tìm thấy');
+  const data = await resp.json();
+  document.getElementById('hosoInfo').classList.remove('hidden');
+  document.getElementById('hosoSummary').innerText = `Ngày: ${data.ngayKham}, Bác sĩ: ${data.bacSi}, Chẩn đoán: ${data.chanDoan}`;
+  window.__hoso = data;
+});
+
+document.getElementById('viewDonThuoc').addEventListener('click', async () => {
+  // Sử dụng maHoSo của bệnh nhân tìm được để tìm đơn thuốc; hiện tại dùng DT-001
+  const resp = await fetch('/xuat/api/donthuoc/DT-001');
+  const data = await resp.json();
+  document.getElementById('donThuocInfo').classList.remove('hidden');
+  const tbody = document.querySelector('#donthuocTable tbody');
+  tbody.innerHTML = '';
+  let total = 0;
+  // data.chiTiet chứa các mục với thông tin thuốc lồng bên trong
+  (data.chiTiet || []).forEach(i => {
+    const name = (i.thuoc && i.thuoc.ten) || 'Unknown';
+    total += i.soLuong * i.donGia;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${name}</td><td>${i.soLuong}</td><td>${i.donGia} đ</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('donTotal').innerText = 'Tổng cộng: ' + total + ' đ';
+  window.__donthuoc = data;
+});
+
+  document.getElementById('btnCreateInvoice').addEventListener('click', function () {
+  const pt = window.__patient;
+  const dt = window.__donthuoc;
+  if (!pt || !dt) return alert('Thiếu dữ liệu');
+  // redirect to invoice creation page passing params
+  // NOTE: `dt` object returned from API contains `maDon` (not `ma`) — use the correct property
+  const maDonVal = dt.maDon || dt.ma || '';
+  const url = `/hoadon/create?maDonThuoc=${encodeURIComponent(maDonVal)}&maBenhNhan=${encodeURIComponent(pt.cccd)}`;
+  window.location = url;
+});
+</script>
+
+<%- include('./partials/footer') %>

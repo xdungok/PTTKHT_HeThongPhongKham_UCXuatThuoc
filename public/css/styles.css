@@ -1,0 +1,29 @@
+:root{--accent:#1abc9c;--muted:#eef6f4}
+body{font-family:Inter,Segoe UI,Arial;padding:0;margin:0;color:#222;background:#fff}
+.app{display:flex;height:100vh}
+.leftnav{width:230px;background:linear-gradient(180deg,#e7fff6,#f6fff8);padding:18px;color:#0D6E4F}
+.leftnav .brand{font-weight:700;margin-bottom:18px}
+.leftnav ul{list-style:none;padding:0}
+.leftnav ul li{padding:10px 0}
+.leftnav ul li a{color:#0d6e4f;text-decoration:none}
+.leftnav ul li.active a{font-weight:700;border-left:4px solid var(--accent);padding-left:8px}
+.content{flex:1;padding:40px;background:linear-gradient(180deg,#f8fffc,#fff)}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.dashboard .welcome{font-size:28px;margin-bottom:12px}
+.quick-actions{display:flex;gap:14px}
+.card{display:block;padding:18px;background:white;border-radius:8px;text-decoration:none;color:#0d6e4f;box-shadow:0 6px 12px rgba(0,0,0,0.05)}
+.panel{background:white;padding:14px;margin:12px 0;border-radius:8px}
+
+.xuat .search{display:flex;gap:8px;align-items:center}
+.xuat input{padding:8px;border:1px solid #dfe;min-width:300px;border-radius:6px}
+.xuat button{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:6px}
+.hidden{display:none}
+
+table{width:100%;border-collapse:collapse;margin-top:12px}
+table thead th{background:#f4f8f6;padding:8px;text-align:left}
+table td{padding:10px;border-bottom:1px solid #eee}
+
+.invoice-summary .payment{margin-top:16px}
+.total{margin-top:8px;font-weight:700}
+
+@media (max-width:800px){.app{flex-direction:column}.leftnav{width:100%}}

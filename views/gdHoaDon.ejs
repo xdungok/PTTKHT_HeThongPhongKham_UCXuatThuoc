@@ -1,0 +1,98 @@
+<%- include('./partials/header') %>
+
+<section class="hoadon">
+  <div class="invoice-summary">
+    <h3>Hóa đơn thuốc (tạm thời)</h3>
+    <div>Bệnh nhân: <strong id="patientId"><%= maBenhNhan %></strong></div>
+    <div>Đơn thuốc: <strong id="donThuocId"><%= maDonThuoc %></strong></div>
+
+    <table id="invoiceTable">
+      <thead><tr><th>Tên thuốc</th><th>Số lượng</th><th>Tồn kho</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="payment">
+      <label for="maBHYT">Mã BHYT</label>
+      <input id="maBHYT" placeholder="Nhập mã BHYT nếu có" />
+      <button id="btnCheckBHYT">Kiểm tra</button>
+
+      <div id="insuranceResult"></div>
+      <div class="total">Tổng trước BHYT: <strong id="totalBefore">-</strong></div>
+      <div class="total">Tổng phải thanh toán: <strong id="totalAfter">-</strong></div>
+
+      <button id="btnThanhToan">Thanh toán</button>
+    </div>
+  </div>
+
+    <script>
+  async function loadInvoice() {
+    const params = new URLSearchParams(location.search);
+    // guard against the string 'undefined' (which can happen when previous pages build a URL from an undefined value)
+    let maDonThuoc = params.get('maDonThuoc');
+    if (!maDonThuoc || maDonThuoc === 'undefined') maDonThuoc = 'DT-001';
+    let maBenhNhan = params.get('maBenhNhan');
+    if (!maBenhNhan || maBenhNhan === 'undefined') maBenhNhan = '012345678910';
+    // show the loaded identifiers in the page until the API returns
+    document.getElementById('patientId').innerText = maBenhNhan;
+    document.getElementById('donThuocId').innerText = maDonThuoc;
+    const payload = { maDonThuoc, maBenhNhan };
+    const r = await fetch('/hoadon/api/create-temp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    // read response body as text so we can handle both success and error payloads
+    const body = await r.text();
+    if (!r.ok) {
+      let message = body || r.statusText || 'Lỗi';
+      try { message = JSON.parse(body).message || message; } catch (e) { /* not json */ }
+      return alert('Không tạo hóa đơn tạm thời — ' + message);
+    }
+    // parse JSON body
+    const json = JSON.parse(body);
+    // populate table
+    const tbody = document.querySelector('#invoiceTable tbody');
+    tbody.innerHTML = '';
+    let total = 0;
+    json.donThuoc.chiTiet.forEach(i => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${i.thuoc ? i.thuoc.ten : 'N/A'}</td><td>${i.soLuong}</td><td>${i.thuoc ? i.thuoc.tonKho : '-'}</td><td>${i.donGia}</td><td>${i.soLuong * i.donGia}</td>`;
+      tbody.appendChild(tr);
+      total += i.soLuong * i.donGia;
+    });
+    document.getElementById('totalBefore').innerText = `${total.toLocaleString()} đ`;
+    // default no BHYT
+    document.getElementById('totalAfter').innerText = document.getElementById('totalBefore').innerText;
+    // store invoice id
+    window.__invoice = json.invoice;
+    window.__donThuoc = json.donThuoc;
+  }
+
+  document.getElementById('btnCheckBHYT').addEventListener('click', async () => {
+    const code = document.getElementById('maBHYT').value.trim();
+    if (!code) return alert('Nhập mã');
+    const r = await fetch('/hoadon/api/insurance/' + encodeURIComponent(code));
+    if (!r.ok) return document.getElementById('insuranceResult').innerText = 'Không tìm thấy BHYT';
+    const b = await r.json();
+    document.getElementById('insuranceResult').innerText = `BHYT ${b.maBHYT} - giảm ${b.percent * 100}%`;
+    // apply discount
+    const before = parseInt(document.getElementById('totalBefore').innerText.replace(/[^0-9]/g, '')); // crude
+    const discount = Math.round(before * b.percent);
+    const after = before - discount;
+    document.getElementById('totalAfter').innerText = after.toLocaleString() + ' đ';
+  });
+
+  document.getElementById('btnThanhToan').addEventListener('click', async () => {
+    if (!confirm('Xác nhận thanh toán hóa đơn?')) return;
+    const result = await fetch('/hoadon/pay', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ invoiceId: window.__invoice.maHoaDon })});
+    const r = await result.json();
+    if (r.success) {
+      alert('Thanh toán thành công — hóa đơn: ' + r.invoiceId);
+      // open export workflow (simulate print/exporting meds)
+      // prepare items for export (map thuoc.maThuoc and soLuong)
+      const items = window.__donThuoc.chiTiet.map(i => ({ maThuoc: i.thuoc ? i.thuoc.maThuoc : null, soLuong: i.soLuong }));
+      await fetch('/hoadon/api/export', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items })});
+      window.location = '/';
+    } else alert('Lỗi khi thanh toán');
+  });
+
+  loadInvoice();
+  </script>
+
+<%- include('./partials/footer') %>
