@@ -4,7 +4,8 @@ module.exports = (sequelize, DataTypes) => {
     maThuoc: { type: DataTypes.STRING, unique: true, allowNull: false },
     ten: { type: DataTypes.STRING },
     tonKho: { type: DataTypes.INTEGER, defaultValue: 0 },
-    donGia: { type: DataTypes.FLOAT, defaultValue: 0 }
+    donGia: { type: DataTypes.FLOAT, defaultValue: 0 },
+    coBH: { type: DataTypes.BOOLEAN, defaultValue: false }
   }, { tableName: 'thuoc', timestamps: true });
   return Thuoc;
 };

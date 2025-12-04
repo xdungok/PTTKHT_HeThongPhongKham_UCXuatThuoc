@@ -44,4 +44,21 @@ router.get('/api/donthuoc/:ma', async (req, res) => {
   }
 });
 
+// Fetch prescription by medical record (maHoSo)
+router.get('/api/hoso/:maHoSo/donthuoc', async (req, res) => {
+  try {
+    const { maHoSo } = req.params;
+    const { DonThuoc } = require('../models');
+    // find prescription linked to this medical record
+    const don = await DonThuoc.findOne({ include: [{ association: 'HoSoBenhAn', where: { maHoSo } }] });
+    if (!don) return res.status(404).json({ message: 'Không tìm thấy đơn thuốc cho hồ sơ này' });
+    // fetch full details with medicine info
+    const item = await DonThuocDAO.getDonThuocChiTiet(don.maDon);
+    return res.json(item);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
 module.exports = router;

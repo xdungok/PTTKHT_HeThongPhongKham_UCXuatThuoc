@@ -17,12 +17,12 @@ async function run() {
     const bn = await BenhNhan.create({ hoTen: 'Nguyễn Văn An', cccd: '012345678910', ngheNghiep: 'Lập trình viên', maHoSo: 'BA-20240521-001' });
     const hs = await HoSoBenhAn.create({ maHoSo: 'BA-20240521-001', ngayKham: '2024-05-21', bacSi: 'Dr. Trần Minh Hoàng', chanDoan: 'Viêm họng cấp', benhNhanId: bn.id });
 
-    // Thêm thuốc
-    const t1 = await Thuoc.create({ maThuoc: 'T-001', ten: 'Paracetamol 500mg', tonKho: 150, donGia: 1000 });
-    const t2 = await Thuoc.create({ maThuoc: 'T-002', ten: 'Amoxicillin 250mg', tonKho: 80, donGia: 2500 });
-    const t3 = await Thuoc.create({ maThuoc: 'T-003', ten: 'Loratadine 10mg', tonKho: 0, donGia: 1500 });
-    const t4 = await Thuoc.create({ maThuoc: 'T-004', ten: 'Ibuprofen 200mg', tonKho: 120, donGia: 1200 });
-    const t5 = await Thuoc.create({ maThuoc: 'T-005', ten: 'Vitamin C 500mg', tonKho: 200, donGia: 800 });
+    // Thêm thuốc (coBH = có trong bảo hiểm hay không)
+    const t1 = await Thuoc.create({ maThuoc: 'T-001', ten: 'Paracetamol 500mg', tonKho: 150, donGia: 1000, coBH: true });
+    const t2 = await Thuoc.create({ maThuoc: 'T-002', ten: 'Amoxicillin 250mg', tonKho: 80, donGia: 2500, coBH: true });
+    const t3 = await Thuoc.create({ maThuoc: 'T-003', ten: 'Loratadine 10mg', tonKho: 0, donGia: 1500, coBH: false });
+    const t4 = await Thuoc.create({ maThuoc: 'T-004', ten: 'Ibuprofen 200mg', tonKho: 120, donGia: 1200, coBH: true });
+    const t5 = await Thuoc.create({ maThuoc: 'T-005', ten: 'Vitamin C 500mg', tonKho: 200, donGia: 800, coBH: false });
 
     // Đơn thuốc chính với 3 mục
     const don = await DonThuoc.create({ maDon: 'DT-001', ghiChu: 'Đơn điều trị viêm họng', hoSoId: hs.id });
@@ -42,9 +42,9 @@ async function run() {
     const don3 = await DonThuoc.create({ maDon: 'DT-003', ghiChu: 'Đơn đau đầu', hoSoId: hs3.id });
     await ChiTietDonThuoc.create({ donThuocId: don3.id, thuocId: t4.id, soLuong: 8, donGia: t4.donGia });
 
-    // Một số mục BHYT mẫu
-    await BaoHiemYTe.create({ maBHYT: 'BHYT-123', percent: 0.8 });
-    await BaoHiemYTe.create({ maBHYT: 'BHYT-555', percent: 0.5 });
+    // Một số mục BHYT mẫu (khi xác nhận BHYT sẽ áp dụng trừ tiền cho những thuốc có coBH=true)
+    await BaoHiemYTe.create({ maBHYT: 'BHYT-123', hoTen: 'Bảo hiểm Y tế loại A' });
+    await BaoHiemYTe.create({ maBHYT: 'BHYT-555', hoTen: 'Bảo hiểm Y tế loại B' });
 
     // Tạo một số hóa đơn mẫu: một hóa đơn tạm chưa thanh toán và một hóa đơn đã thanh toán
     const invoice1 = await HoaDon.create({ maHoaDon: 'HD-0001', benhNhanId: bn.id, donThuocId: don.id, tongTien: 96000, bhytMa: null, trangThai: 'CHỜ THANH TOÁN' });

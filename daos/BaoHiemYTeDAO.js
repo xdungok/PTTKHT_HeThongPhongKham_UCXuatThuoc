@@ -4,7 +4,7 @@ class BaoHiemYTeDAO {
   static async getBaoHiemYTeByMa(maBHYT) {
     const b = await BaoHiemYTe.findOne({ where: { maBHYT } });
     if (!b) return null;
-    return { id: b.id, maBHYT: b.maBHYT, percent: b.percent };
+    return { id: b.id, maBHYT: b.maBHYT, hoTen: b.hoTen, valid: true };
   }
 }
 

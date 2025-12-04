@@ -7,7 +7,7 @@
     <div>Đơn thuốc: <strong id="donThuocId"><%= maDonThuoc %></strong></div>
 
     <table id="invoiceTable">
-      <thead><tr><th>Tên thuốc</th><th>Số lượng</th><th>Tồn kho</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
+      <thead><tr><th>Tên thuốc</th><th>Số lượng</th><th>Tồn kho</th><th>Đơn giá</th><th>Thành tiền</th><th>Có BH?</th></tr></thead>
       <tbody></tbody>
     </table>
 
@@ -52,14 +52,16 @@
     let total = 0;
     json.donThuoc.chiTiet.forEach(i => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${i.thuoc ? i.thuoc.ten : 'N/A'}</td><td>${i.soLuong}</td><td>${i.thuoc ? i.thuoc.tonKho : '-'}</td><td>${i.donGia}</td><td>${i.soLuong * i.donGia}</td>`;
+      const giaTien = i.soLuong * i.donGia;
+      const bhStatus = (i.thuoc && i.thuoc.coBH) ? 'Có' : 'Không';
+      tr.innerHTML = `<td>${i.thuoc ? i.thuoc.ten : 'N/A'}</td><td>${i.soLuong}</td><td>${i.thuoc ? i.thuoc.tonKho : '-'}</td><td>${i.donGia}</td><td>${giaTien}</td><td>${bhStatus}</td>`;
       tbody.appendChild(tr);
-      total += i.soLuong * i.donGia;
+      total += giaTien;
     });
     document.getElementById('totalBefore').innerText = `${total.toLocaleString()} đ`;
-    // default no BHYT
+    // default no BHYT applied
     document.getElementById('totalAfter').innerText = document.getElementById('totalBefore').innerText;
-    // store invoice id
+    // store invoice id and item list for later use
     window.__invoice = json.invoice;
     window.__donThuoc = json.donThuoc;
   }
@@ -70,10 +72,16 @@
     const r = await fetch('/hoadon/api/insurance/' + encodeURIComponent(code));
     if (!r.ok) return document.getElementById('insuranceResult').innerText = 'Không tìm thấy BHYT';
     const b = await r.json();
-    document.getElementById('insuranceResult').innerText = `BHYT ${b.maBHYT} - giảm ${b.percent * 100}%`;
-    // apply discount
-    const before = parseInt(document.getElementById('totalBefore').innerText.replace(/[^0-9]/g, '')); // crude
-    const discount = Math.round(before * b.percent);
+    document.getElementById('insuranceResult').innerText = `BHYT ${b.maBHYT} hợp lệ (${b.hoTen})`;
+    // calculate discount: only medicines with coBH=true are deducted at full price
+    const before = parseInt(document.getElementById('totalBefore').innerText.replace(/[^0-9]/g, ''));
+    let discount = 0;
+    window.__donThuoc.chiTiet.forEach(i => {
+      // if medicine has coBH=true, subtract full price (soLuong * donGia)
+      if (i.thuoc && i.thuoc.coBH) {
+        discount += i.soLuong * i.donGia;
+      }
+    });
     const after = before - discount;
     document.getElementById('totalAfter').innerText = after.toLocaleString() + ' đ';
   });

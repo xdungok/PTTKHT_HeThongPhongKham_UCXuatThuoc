@@ -56,14 +56,21 @@ document.getElementById('viewHoSo').addEventListener('click', async () => {
 });
 
 document.getElementById('viewDonThuoc').addEventListener('click', async () => {
-  // Sử dụng maHoSo của bệnh nhân tìm được để tìm đơn thuốc; hiện tại dùng DT-001
-  const resp = await fetch('/xuat/api/donthuoc/DT-001');
+  // Use the medical record (maHoSo) to find the associated prescription
+  const p = window.__patient;
+  const hs = window.__hoso;
+  if (!p || !hs) return alert('Không có bệnh nhân hoặc hồ sơ');
+  const resp = await fetch('/xuat/api/hoso/' + encodeURIComponent(hs.maHoSo) + '/donthuoc');
+  if (!resp.ok) {
+    const txt = await resp.text();
+    return alert('Không tìm thấy đơn thuốc — ' + txt);
+  }
   const data = await resp.json();
   document.getElementById('donThuocInfo').classList.remove('hidden');
   const tbody = document.querySelector('#donthuocTable tbody');
   tbody.innerHTML = '';
   let total = 0;
-  // data.chiTiet chứa các mục với thông tin thuốc lồng bên trong
+  // data.chiTiet contains items with nested thuoc information
   (data.chiTiet || []).forEach(i => {
     const name = (i.thuoc && i.thuoc.ten) || 'Unknown';
     total += i.soLuong * i.donGia;
